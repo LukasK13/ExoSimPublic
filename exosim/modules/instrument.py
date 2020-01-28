@@ -110,11 +110,14 @@ def run(opt, star, planet, zodi):
       if hasattr(ch, "dispersion"):
         dtmp=np.loadtxt(ch.dispersion.path.replace(
           '__path__', opt.__path__), delimiter=',')
-        ld = scipy.interpolate.interp1d(dtmp[...,2]*pq.um + ch.dispersion().rescale(pq.um), 
-                                        dtmp[...,0],
-                                        bounds_error=False,
-                                        kind='slinear',
-                                        fill_value=0.0)
+        wav   = dtmp[...,0]
+        pathx = dtmp[...,2]*pq.um + ch.dispersion()[0].rescale(pq.um)
+        pathy = dtmp[...,3]*pq.um + ch.dispersion()[1].rescale(pq.um)
+        pathint = scipy.interpolate.interp1d(pathx, pathy,
+                                             bounds_error=False,
+                                             kind='linear')
+        ld = scipy.interpolate.interp1d(pathx, wav, bounds_error=False,
+                                        kind='linear')
       elif hasattr(ch, "ld"):
         # wl = ld[0] + ld[1](x - ld[2]) = ld[1]*x + ld[0]-ldp[1]*ld[2]
         ld = np.poly1d( (ch.ld()[1], ch.ld()[0]-ch.ld()[1]*ch.ld()[2]) )
@@ -122,9 +125,13 @@ def run(opt, star, planet, zodi):
         exolib.exosim_error("Dispersion law not defined.")
       
       #4a# Estimate pixel and wavelength coordinates
-      x_pix_osr = np.arange(fp.shape[1]) * fp_delta  
-      x_wav_osr = ld(x_pix_osr.rescale(pq.um))*pq.um # walength on each x pixel
+      x_pix_osr = np.arange(fp.shape[1]) * fp_delta
+      y_pix_osr = pathint(x_pix_osr.rescale(pq.um))*pq.um
+
+      x_wav_osr = ld(x_pix_osr.rescale(pq.um))*pq.um
+
       channel[ch.name].wl_solution = x_wav_osr
+      channel[ch.name].y_trace     = y_pix_osr
 
     
     elif ch.type == 'photometer':
