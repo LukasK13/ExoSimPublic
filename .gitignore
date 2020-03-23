@@ -1,0 +1,6 @@
+.idea/*
+.DS_Store
+exosim/open_exoplanet_catalogue/*
+exosim/data/star/*.gz
+exosim/exosim_defaults.xml
+exosim/data/twinkle/*
